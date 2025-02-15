@@ -4,7 +4,13 @@ import { ChatOpenAI, ChatOpenAICallOptions } from "@langchain/openai";
 import { z } from "zod";
 import * as viemChains from "viem/chains";
 
-import { Address, ConsoleKit, SwapQuoteRoute } from "brahma-console-kit";
+import {
+  Address,
+  BridgeRoute,
+  ConsoleKit,
+  GetBridgingRoutesParams,
+  SwapQuoteRoute,
+} from "brahma-console-kit";
 import { chainNames } from "./constant";
 import { isAddress } from "viem";
 
@@ -36,11 +42,17 @@ export async function extractJSON(text: string, model: ChatOpenAI) {
 const transactionParser = StructuredOutputParser.fromZodSchema(
   z.object({
     chainId: z
-      .number()
+      .string()
       .optional()
       .describe("The chain ID where the transaction occurred"),
-    tokenIn: z.string().optional().describe("The token being swapped/sent"),
-    tokenOut: z.string().optional().describe("The token received"),
+    tokenIn: z
+      .string()
+      .optional()
+      .describe("This token is the one which we receive after swap"),
+    tokenOut: z
+      .string()
+      .optional()
+      .describe("This token is one we is let out for other token"),
     inputTokenAmount: z
       .string()
       .optional()
@@ -58,11 +70,11 @@ const transactionParser = StructuredOutputParser.fromZodSchema(
       .optional()
       .describe("The address of the token involved"),
     chainIdOut: z
-      .number()
+      .string()
       .optional()
       .describe("The chain ID of the output token during the bridge"),
     chainIdIn: z
-      .number()
+      .string()
       .optional()
       .describe("The chain ID of the input token during the bridge"),
   })
@@ -106,6 +118,26 @@ export function isValidJSON(str: string) {
   }
 }
 
+export const fetchBridgingRoutes = async (
+  params: GetBridgingRoutesParams
+): Promise<any[]> => {
+  const consoleKit = new ConsoleKit(
+    "f27abba2-0749-4d95-aa3d-3c6beb95f59a",
+    "https://dev.console.fi/v1/vendor"
+  );
+  try {
+    const resp = await consoleKit.coreActions.fetchBridgingRoutes({
+      ...params,
+    });
+
+    console.log("resp---", resp);
+    return resp;
+  } catch (err: any) {
+    console.error(`Error fetching bridging routes: ${err.message}`);
+    return [];
+  }
+};
+
 export const getSwapRoutesData = async (
   tokenIn: Address,
   tokenOut: Address,
@@ -118,7 +150,13 @@ export const getSwapRoutesData = async (
     "f27abba2-0749-4d95-aa3d-3c6beb95f59a",
     "https://dev.console.fi/v1/vendor"
   );
-
+  console.log("getSwapRoutesData===", {
+    tokenIn,
+    tokenOut,
+    accountAddress,
+    inputTokenAmount,
+    chainId,
+  });
   try {
     const resp = await consoleKit.coreActions.getSwapRoutes(
       tokenIn,
@@ -155,7 +193,7 @@ export const modifyValuesAsPerRequirement = async (input: any) => {
   const modifyData = { ...input };
   if (isNaN(input.chainId)) {
     console.log("not a chain id");
-    modifyData.chainId = chainNames[input.chainId];
+    modifyData.chainId = chainNames[input.chainId.toLowerCase()];
   }
   if (!isAddress(input.tokenAddress)) {
     console.log("not proper token address", input.tokenAddress);
@@ -165,7 +203,30 @@ export const modifyValuesAsPerRequirement = async (input: any) => {
     );
     modifyData.tokenAddress = tokenInfo.address;
   }
+  if (!isAddress(input.tokenIn)) {
+    console.log("not proper token in address", input.tokenIn);
+    const tokenInfo = await getTokenInfo(
+      Number(modifyData.chainId),
+      input.tokenIn
+    );
+    modifyData.tokenIn = tokenInfo.address;
+  }
+  if (!isAddress(input.tokenOut)) {
+    console.log("not proper token out address", input.tokenOut);
+    const tokenInfo = await getTokenInfo(
+      Number(modifyData.chainId),
+      input.tokenOut
+    );
+    modifyData.tokenOut = tokenInfo.address;
+  }
 
-  console.log("modifyData-------", modifyData);
+  if (isNaN(input.chainIdIn)) {
+    console.log("not a chain in id");
+    modifyData.chainIdIn = chainNames[input.chainIdIn];
+  }
+  if (isNaN(input.chainIdOut)) {
+    console.log("not a chain out id");
+    modifyData.chainIdOut = chainNames[input.chainIdOut];
+  }
   return Promise.resolve(modifyData);
 };

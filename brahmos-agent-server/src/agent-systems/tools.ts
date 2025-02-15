@@ -2,11 +2,7 @@ import { tool } from "@langchain/core/tools";
 import { BridgerSchema, SenderSchema, SwapperSchema } from "./schemas";
 import { Address, ConsoleKit, SwapQuoteRoute } from "brahma-console-kit";
 import { ConsoleKitConfig } from "./config";
-import {
-  getSwapRoutesData,
-  getTokenInfo,
-  modifyValuesAsPerRequirement,
-} from "./utils";
+import { getSwapRoutesData, modifyValuesAsPerRequirement } from "./utils";
 
 export const sendToken = tool(
   async (input, fields) => {
@@ -55,27 +51,30 @@ export const bridgeToken = tool(
       ConsoleKitConfig.apiKey,
       ConsoleKitConfig.baseUrl
     );
-
+    console.log("bridgeRoute==========>input", input);
     try {
       const [bridgeRoute] = await consoleKit.coreActions.fetchBridgingRoutes({
         amountIn: input.inputTokenAmount,
         amountOut: "0",
-        chainIdIn: input.chainIdIn,
-        chainIdOut: input.chainIdOut,
+        chainIdIn: Number(input.chainIdIn),
+        chainIdOut: Number(input.chainIdOut),
         ownerAddress: input.accountAddress,
         recipient: input.accountAddress as any,
-        slippage: 1,
+        slippage: 0.1,
         tokenIn: input.tokenIn,
         tokenOut: input.tokenOut,
       });
+
+      if (!bridgeRoute) return "No Bridge route found";
+
       const { data } = await consoleKit.coreActions.bridge(
         input.chainIdIn,
         input.accountAddress as any,
         {
           amountIn: input.inputTokenAmount,
           amountOut: "0",
-          chainIdIn: input.chainIdIn,
-          chainIdOut: input.chainIdOut,
+          chainIdIn: Number(input.chainIdIn),
+          chainIdOut: Number(input.chainIdOut),
           ownerAddress: input.accountAddress as any,
           recipient: input.accountAddress as any,
           route: bridgeRoute,
@@ -134,7 +133,7 @@ export const swapToken = tool(
           input.accountAddress as Address,
           input.inputTokenAmount,
           `${1}`,
-          input.chainId
+          Number(input.chainId)
         )) ?? [];
 
       if (!swapRouteData.length) return "No swap route found";
@@ -146,7 +145,7 @@ export const swapToken = tool(
         input.accountAddress as Address,
         {
           amountIn: input.inputTokenAmount,
-          chainId: input.chainId,
+          chainId: Number(input.chainId),
           route: swapRoute,
           slippage: 1,
           tokenIn: input.tokenIn as Address,

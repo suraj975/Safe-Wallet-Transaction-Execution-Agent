@@ -67,12 +67,12 @@ export const SwapperSchema = z.object({
   tokenIn: z
     .string()
     .describe(
-      "This the address of the token that user gets in. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
+      "This the token address is one which we receive after swap. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     ),
   tokenOut: z
     .string()
     .describe(
-      "This the address of the token that user gives out. Example:'0xB0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
+      "This the token address is one which we send out for swap to another token. Example:'0xB0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     ),
   inputTokenAmount: z
     .string()
@@ -81,7 +81,7 @@ export const SwapperSchema = z.object({
 
 export const TransactionSchema = z.object({
   chainId: z
-    .number()
+    .string()
     .describe("This is the id of the chain. Example:'1 for ethereum'")
     .optional(),
 
@@ -120,16 +120,16 @@ export const TransactionSchema = z.object({
       "This the token address. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     ),
   chainIdOut: z
-    .number()
+    .string()
     .optional()
     .describe(
-      "This the id of the chain from which token will be out. Example:'1 for ethereum'"
+      "This the id of the chain from which token will be out or the token transferring out of this chain. Example:'1 for ethereum'"
     ),
   chainIdIn: z
-    .number()
+    .string()
     .optional()
     .describe(
-      "This is the id of chain that token will be received. Example:'8453 for base'"
+      "This is the id of chain that token will be received or the token transferring to this chain. Example:'8453 for base'"
     ),
   transactions: z.array(z.object({})).optional(),
 });

@@ -1,11 +1,10 @@
 import {
-  task,
-  entrypoint,
   Annotation,
   MessagesAnnotation,
   StateGraph,
   START,
   END,
+  MemorySaver,
 } from "@langchain/langgraph";
 import dotenv from "dotenv";
 dotenv.config();
@@ -35,13 +34,14 @@ const GraphAnnotation = Annotation.Root({
 });
 
 const toolNode = new ToolNode(ALL_TOOLS_LIST);
+const memory = new MemorySaver();
 
 const callModel = async (state: {
   messages: AIMessage[];
   transaction: z.infer<typeof TransactionSchema>;
 }) => {
   const { messages, transaction } = state;
-
+  console.log("transaction callModel messages---", transaction);
   if (!transaction) {
     throw new Error("Transaction is missing from state");
   }
@@ -58,7 +58,12 @@ const callModel = async (state: {
     - Bridging tokens from one chain to another
     - All transaction data tools require a data to be passed in as a parameter
     - Use this ${state.transaction.accountAddress} as the accountAddress provided in the graph state and dont take it from user context
+    - Make sure you use only address for token, tokenIn and tokenOut
+    - Use only this data ${transaction} to get the values required for agent tool  
+    - Use this ${state.transaction.tokenIn} as the tokenIn provided in the graph state and dont take it from user context
+    - Use this ${state.transaction.tokenOut} as the tokenOut provided in the graph state and dont take it from user context
     - Return the response when all the transactions has been created
+
     `,
   };
 
@@ -112,11 +117,12 @@ export const blockchainAgent = async (
   const extractedTransaction = await extractTransactionJSON(userInput, llm);
   console.log("extractedTransaction---", extractedTransaction);
   const data = await modifyValuesAsPerRequirement(extractedTransaction);
-  console.log("data---", data);
+  console.log("data---", data, address);
   const inputs = {
     messages: [{ role: "user", content: userInput }],
     transaction: {
       ...extractedTransaction,
+      ...data,
       accountAddress: address,
       transactions: [],
     },
@@ -163,5 +169,7 @@ export const blockchainAgent = async (
   }
 };
 
-//Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
+// Currently swap are only working for base, arbitrum and base chains on brahma console kit
+// Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
 // Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain
+// Can you swap 100 of this token USDC to WBTC on base chain
