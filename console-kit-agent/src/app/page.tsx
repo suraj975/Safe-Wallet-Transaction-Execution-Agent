@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Transactions from "@/components/pendingTransaction";
 import { useAccount } from "wagmi";
@@ -26,6 +26,23 @@ export default function ChatUI() {
   const [userInput, setUserInput] = useState("");
   const [connected, setConnected] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const eventEndRef = useRef<HTMLDivElement>(null);
+  const transactionEndRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      eventEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      transactionEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100); // Short delay to allow DOM updates
+  }, [events]);
+
+  // useEffect(() => {
+  //   chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  //   eventEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  //   transactionEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // }, [messages]);
   const [showTransactions, setShowTransactions] = useState(true);
   console.log("graphState---", graphState);
   const eventSourceRef = useRef<EventSource | null>(null); // Store SSE connection
@@ -127,35 +144,44 @@ export default function ChatUI() {
         >
           <button
             onClick={() => setShowTransactions(!showTransactions)}
-            className={`absolute ${
+            className={`absolute zIndex-9999 ${
               showTransactions ? "left-0" : "-right-6"
             } top-12 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-l-lg lg:hidden`}
           >
             {showTransactions ? "◀" : "▶"}
           </button>
-          <div className="p-4 h-full overflow-y-auto">
-            <h2 className="text-lg font-bold text-cyan-300 mb-4">
+
+          {/* Scrollable container */}
+          <div className="p-4 h-full flex flex-col">
+            {/* Sticky header */}
+            <h2 className="text-lg font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 z-10 border-b border-gray-800">
               💳 Transactions
             </h2>
-            {transaction.length > 0 ? (
-              transaction.map((component, index) => (
-                <Transactions
-                  key={index}
-                  transaction={
-                    transaction[index] as {
-                      to: string;
-                      data: string;
-                      value: string;
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              {transaction.length > 0 ? (
+                transaction.map((component, index) => (
+                  <Transactions
+                    key={index}
+                    transaction={
+                      transaction[index] as {
+                        to: string;
+                        data: string;
+                        value: string;
+                      }
                     }
-                  }
-                  graphState={graphState[index]}
-                />
-              ))
-            ) : (
-              <p className="text-gray-400 text-center">
-                No transactions yet...
-              </p>
-            )}
+                    graphState={graphState[index]}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-400 text-center">
+                  No transactions yet...
+                </p>
+              )}
+              {/* Scrolling anchor */}
+              <div ref={transactionEndRef} />
+            </div>
           </div>
         </div>
         <div className="flex-1 flex flex-col items-center p-8 pb-20 gap-6 bg-black text-white overflow-hidden">
@@ -176,21 +202,49 @@ export default function ChatUI() {
               {messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`flex ${
+                  className={`flex items-end gap-3 ${
                     msg.role === "user" ? "justify-end" : "justify-start"
-                  } mb-2`}
+                  } mb-3`}
                 >
-                  <ReactMarkdown
-                    className={`inline-block p-3 rounded-lg text-sm font-mono ${
+                  {/* Bot Avatar */}
+                  {msg.role !== "user" && (
+                    <img
+                      src="/bot.png"
+                      alt="Agent"
+                      className="w-9 h-9 rounded-full border border-cyan-500"
+                    />
+                  )}
+
+                  <div
+                    className={`max-w-[75%] p-3 rounded-xl text-sm font-mono shadow-md ${
                       msg.role === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-cyan-300"
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-gray-800 text-cyan-300 rounded-bl-none"
                     }`}
                   >
-                    {msg.content}
-                  </ReactMarkdown>
+                    <ReactMarkdown className="break-words">
+                      {msg.content}
+                    </ReactMarkdown>
+                    <div className="text-xs text-gray-400 mt-1 text-right">
+                      {new Date().toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+
+                  {/* User Avatar */}
+                  {msg.role === "user" && (
+                    <img
+                      src="/profile.png"
+                      alt="User"
+                      className="w-9 h-9 rounded-full border border-blue-500"
+                    />
+                  )}
                 </div>
               ))}
+              {/* Invisible div for auto-scroll */}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Input Box */}
@@ -220,40 +274,52 @@ export default function ChatUI() {
         >
           <button
             onClick={() => setShowEvents(!showEvents)}
-            className={`absolute ${
+            className={`absolute zIndex-99 ${
               showEvents ? "right-0" : "-left-5"
             } top-10 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-l-lg lg:hidden`}
           >
             {showEvents ? "▶" : "◀"}
           </button>
 
-          <div className="p-4 h-full overflow-y-auto">
-            <h2 className="text-lg font-bold text-cyan-300 mb-4">
+          {/* Scrollable container */}
+          <div className="p-4 h-full flex flex-col">
+            {/* Sticky header */}
+            <h2 className="text-lg font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 z-10 border-b border-gray-800">
               🔍 Event Logs
             </h2>
-            <div className="space-y-2">
-              {events.length > 0 ? (
-                events.map((event, index) => {
-                  const isRolType =
-                    isValidJSON(event) && JSON.parse(event)?.role;
-                  return (
-                    <div
-                      key={index}
-                      className={`${
-                        isRolType ? "border-t-4 border-orange-700" : ""
-                      }`}
-                    >
-                      <pre className="text-xs p-2 bg-gray-900 text-white border border-gray-800 rounded-md overflow-x-auto break-words">
-                        {event}
-                      </pre>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-gray-400 text-center">
-                  Waiting for events...
-                </p>
-              )}
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                {events.length > 0 ? (
+                  events.map((event, index) => {
+                    const isRolType =
+                      isValidJSON(event) && JSON.parse(event)?.role;
+                    return (
+                      <div
+                        key={index}
+                        className={`${
+                          isRolType ? "border-t-4 border-orange-700" : ""
+                        }`}
+                      >
+                        <pre
+                          className={`text-xs p-2 bg-gray-900 ${
+                            isRolType ? "text-orange-400" : "text-green-300"
+                          } border border-gray-800 rounded-md overflow-x-auto break-words`}
+                        >
+                          {event}
+                        </pre>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-gray-400 text-center">
+                    Waiting for events...
+                  </p>
+                )}
+              </div>
+              {/* Scrolling anchor */}
+              <div ref={eventEndRef} />
             </div>
           </div>
         </div>
