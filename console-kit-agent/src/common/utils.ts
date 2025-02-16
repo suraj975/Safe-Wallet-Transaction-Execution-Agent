@@ -136,3 +136,13 @@ export class ConsoleKitService {
     }
   }
 }
+
+export function isValidJSON(str: string) {
+  if (typeof str !== "string") return false; // Ensure it's a string
+  try {
+    JSON.parse(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
