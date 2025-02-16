@@ -1,8 +1,7 @@
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StructuredOutputParser } from "langchain/output_parsers";
-import { ChatOpenAI, ChatOpenAICallOptions } from "@langchain/openai";
+import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
-import * as viemChains from "viem/chains";
 
 import {
   Address,
@@ -137,7 +136,6 @@ export const fetchBridgingRoutes = async (
       ...params,
     });
 
-    console.log("resp---", resp);
     return resp;
   } catch (err: any) {
     console.error(`Error fetching bridging routes: ${err.message}`);
@@ -177,19 +175,6 @@ export const getSwapRoutesData = async (
     let routes = (resp.data as any).data as SwapQuoteRoute[];
     console.log(routes);
 
-    // const { data } = await consoleKit.coreActions.swap(
-    //   8453,
-    //   "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab",
-    //   {
-    //     amountIn: "100",
-    //     chainId: 8453,
-    //     route: routes[0],
-    //     slippage: 0.5,
-    //     tokenIn: "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c" as Address,
-    //     tokenOut: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
-    //   }
-    // );
-
     return routes as SwapQuoteRoute[];
   } catch (err) {
     console.log(err);
@@ -221,6 +206,7 @@ export const modifyValuesAsPerRequirement = async (input: any) => {
     }
     if (!isAddress(input.tokenIn)) {
       console.log("not proper token in address", input.tokenIn);
+
       const tokenInfo = await getTokenInfo(
         Number(modifyData?.chainIdIn ?? modifyData?.chainId),
         input.tokenIn
@@ -251,25 +237,13 @@ export const ConsoleKitFetchBridgingRoutes = async (
   );
 
   try {
-    const bridgeParams = {
-      chainIdIn: 42161,
-      chainIdOut: 8453,
-      tokenIn: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1" as Address,
-      amountIn: "10000000000000000000",
-      amountOut: "0",
-      slippage: 0.5,
-      tokenOut: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb" as Address,
-      ownerAddress: "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab" as Address,
-      recipient: "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab" as Address,
-    };
-    //@ts-ignore
     const resp = await consoleKit.coreActions.fetchBridgingRoutes(input);
     console.log("resp", resp);
     let routes = (resp as any).data as BridgeRoute[];
     console.log(routes);
     const { data } = await consoleKit.coreActions.bridge(
-      8453,
-      "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab",
+      input.chainIdOut,
+      input.ownerAddress as Address,
       //@ts-ignore
       { ...input, route: routes[0] }
     );

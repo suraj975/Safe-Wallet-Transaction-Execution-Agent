@@ -6,6 +6,7 @@ import Transactions from "@/components/pendingTransaction";
 import { useAccount } from "wagmi";
 import { isValidJSON } from "@/common/utils";
 import ReactMarkdown from "react-markdown";
+import { ToolTransactionType } from "@/type";
 
 export default function ChatUI() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
@@ -38,13 +39,7 @@ export default function ChatUI() {
     }, 100); // Short delay to allow DOM updates
   }, [events]);
 
-  // useEffect(() => {
-  //   chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  //   eventEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  //   transactionEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  // }, [messages]);
   const [showTransactions, setShowTransactions] = useState(true);
-  console.log("graphState---", graphState);
   const eventSourceRef = useRef<EventSource | null>(null); // Store SSE connection
   const { address } = useAccount();
 
@@ -165,11 +160,9 @@ export default function ChatUI() {
                   <Transactions
                     key={index}
                     transaction={
-                      transaction[index] as {
-                        to: string;
-                        data: string;
-                        value: string;
-                      }
+                      transaction[index] as
+                        | ToolTransactionType
+                        | ToolTransactionType[]
                     }
                     graphState={graphState[index]}
                   />
