@@ -173,3 +173,4 @@ export const blockchainAgent = async (
 // Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
 // Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain
 // Can you swap 100 of this token USDC to WBTC on base chain
+// Can you send 10000000000000000000 DAI from Base to Arbitrum chain

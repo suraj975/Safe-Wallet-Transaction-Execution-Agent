@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useWalletClient } from "wagmi";
 import { Address, parseEther } from "viem";
-
-type ToolTransactionType = { to: string; data: Address; value: string };
+import { ToolTransactionType } from "@/type";
 
 interface TransactionProps {
   transaction: ToolTransactionType | ToolTransactionType[];
