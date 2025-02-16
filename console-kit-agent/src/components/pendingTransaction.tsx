@@ -3,8 +3,10 @@ import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useWalletClient } from "wagmi";
 import { Address, parseEther } from "viem";
 
+type ToolTransactionType = { to: string; data: Address; value: string };
+
 interface TransactionProps {
-  transaction: { to: string; data: string; value: string };
+  transaction: ToolTransactionType | ToolTransactionType[];
   graphState: {
     accountAddress: string;
     chainId: number;
@@ -39,15 +41,32 @@ const Transactions: React.FC<TransactionProps> = ({
   const executeTransaction = async () => {
     try {
       setStatus("pending");
-      const txHash = await walletClient.sendTransaction({
-        to: transaction?.to as Address,
-        data: transaction?.data as Address,
-        value: parseEther(transaction.value),
-      });
-      console.log("Transaction sent:", txHash);
+      if ((transaction as ToolTransactionType[])?.length > 0) {
+        for (const tx of transaction as ToolTransactionType[]) {
+          if (!tx.to || !tx.data) {
+            console.error("Invalid transaction:", tx);
+            continue;
+          }
+
+          const txHash = await walletClient.sendTransaction({
+            to: tx.to as Address, // Ensure valid Ethereum address
+            data: tx.data || "0x", // Default to "0x" if missing
+            value: tx.value ? parseEther(tx.value) : BigInt(0), // Handle value safely
+          });
+
+          console.log("Transaction sent:", txHash);
+        }
+      } else {
+        const txHash = await walletClient.sendTransaction({
+          to: (transaction as ToolTransactionType)?.to as Address,
+          data: (transaction as ToolTransactionType)?.data as Address,
+          value: parseEther((transaction as ToolTransactionType).value),
+        });
+        console.log("Transaction sent:", txHash);
+      }
       setStatus("completed");
     } catch (error) {
-      console.log("Transaction failed:", error);
+      console.error("Transaction failed:", error);
       setStatus("failed");
     }
   };

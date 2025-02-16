@@ -36,7 +36,6 @@ export async function extractJSON(text: string, model: ChatOpenAI) {
 
   //   console.log("response-->", response);
   const jsonData = await parser.parse(response.text);
-  console.log("jsonData-->", jsonData);
   return jsonData;
 }
 const transactionParser = StructuredOutputParser.fromZodSchema(
@@ -48,11 +47,15 @@ const transactionParser = StructuredOutputParser.fromZodSchema(
     tokenIn: z
       .string()
       .optional()
-      .describe("This token is the one which we receive after swap"),
+      .describe(
+        "This is the token is the one which user receives after swap or bridge"
+      ),
     tokenOut: z
       .string()
       .optional()
-      .describe("This token is one we is let out for other token"),
+      .describe(
+        "This is the token which user is giving out for another token through bridge or swap"
+      ),
     inputTokenAmount: z
       .string()
       .optional()
@@ -72,11 +75,15 @@ const transactionParser = StructuredOutputParser.fromZodSchema(
     chainIdOut: z
       .string()
       .optional()
-      .describe("The chain ID of the output token during the bridge"),
+      .describe(
+        "The chain ID of the token that user sends out during swap or bridge"
+      ),
     chainIdIn: z
       .string()
       .optional()
-      .describe("The chain ID of the input token during the bridge"),
+      .describe(
+        "The chain ID on which user receives the token during bridge or swap "
+      ),
   })
 );
 
@@ -191,42 +198,86 @@ export const getSwapRoutesData = async (
 
 export const modifyValuesAsPerRequirement = async (input: any) => {
   const modifyData = { ...input };
-  if (isNaN(input.chainId)) {
-    console.log("not a chain id");
-    modifyData.chainId = chainNames[input.chainId.toLowerCase()];
-  }
-  if (!isAddress(input.tokenAddress)) {
-    console.log("not proper token address", input.tokenAddress);
-    const tokenInfo = await getTokenInfo(
-      Number(modifyData.chainId),
-      input.tokenAddress
-    );
-    modifyData.tokenAddress = tokenInfo.address;
-  }
-  if (!isAddress(input.tokenIn)) {
-    console.log("not proper token in address", input.tokenIn);
-    const tokenInfo = await getTokenInfo(
-      Number(modifyData.chainId),
-      input.tokenIn
-    );
-    modifyData.tokenIn = tokenInfo.address;
-  }
-  if (!isAddress(input.tokenOut)) {
-    console.log("not proper token out address", input.tokenOut);
-    const tokenInfo = await getTokenInfo(
-      Number(modifyData.chainId),
-      input.tokenOut
-    );
-    modifyData.tokenOut = tokenInfo.address;
+  try {
+    if (isNaN(input.chainId)) {
+      console.log("not a chain id");
+      modifyData.chainId = chainNames[input?.chainId?.toLowerCase()];
+    }
+    if (isNaN(input.chainIdIn)) {
+      console.log("not a chain in id");
+      modifyData.chainIdIn = chainNames[input?.chainIdIn?.toLowerCase()];
+    }
+    if (isNaN(input.chainIdOut)) {
+      console.log("not a chain out id");
+      modifyData.chainIdOut = chainNames[input?.chainIdOut?.toLowerCase()];
+    }
+    if (!isAddress(input.tokenAddress)) {
+      console.log("not proper token address", input.tokenAddress);
+      const tokenInfo = await getTokenInfo(
+        Number(modifyData?.chainId),
+        input.tokenAddress
+      );
+      modifyData.tokenAddress = tokenInfo.address;
+    }
+    if (!isAddress(input.tokenIn)) {
+      console.log("not proper token in address", input.tokenIn);
+      const tokenInfo = await getTokenInfo(
+        Number(modifyData?.chainIdIn ?? modifyData?.chainId),
+        input.tokenIn
+      );
+      modifyData.tokenIn = tokenInfo.address;
+    }
+    if (!isAddress(input.tokenOut)) {
+      console.log("not proper token out address", input.tokenOut);
+      const tokenInfo = await getTokenInfo(
+        Number(modifyData?.chainIdOut ?? modifyData?.chainId),
+        input.tokenOut
+      );
+      modifyData.tokenOut = tokenInfo.address;
+    }
+  } catch (error) {
+    console.log("error----", error);
   }
 
-  if (isNaN(input.chainIdIn)) {
-    console.log("not a chain in id");
-    modifyData.chainIdIn = chainNames[input.chainIdIn];
-  }
-  if (isNaN(input.chainIdOut)) {
-    console.log("not a chain out id");
-    modifyData.chainIdOut = chainNames[input.chainIdOut];
-  }
   return Promise.resolve(modifyData);
+};
+
+export const ConsoleKitFetchBridgingRoutes = async (
+  input: GetBridgingRoutesParams
+) => {
+  const consoleKit = new ConsoleKit(
+    "f27abba2-0749-4d95-aa3d-3c6beb95f59a",
+    "https://dev.console.fi/v1/vendor"
+  );
+
+  try {
+    const bridgeParams = {
+      chainIdIn: 42161,
+      chainIdOut: 8453,
+      tokenIn: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1" as Address,
+      amountIn: "10000000000000000000",
+      amountOut: "0",
+      slippage: 0.5,
+      tokenOut: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb" as Address,
+      ownerAddress: "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab" as Address,
+      recipient: "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab" as Address,
+    };
+    //@ts-ignore
+    const resp = await consoleKit.coreActions.fetchBridgingRoutes(input);
+    console.log("resp", resp);
+    let routes = (resp as any).data as BridgeRoute[];
+    console.log(routes);
+    const { data } = await consoleKit.coreActions.bridge(
+      8453,
+      "0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab",
+      //@ts-ignore
+      { ...input, route: routes[0] }
+    );
+
+    console.log(data);
+    return Promise.resolve(data);
+  } catch (err) {
+    console.log(err);
+    return undefined;
+  }
 };

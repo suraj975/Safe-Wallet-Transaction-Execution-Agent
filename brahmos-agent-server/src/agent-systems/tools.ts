@@ -2,7 +2,11 @@ import { tool } from "@langchain/core/tools";
 import { BridgerSchema, SenderSchema, SwapperSchema } from "./schemas";
 import { Address, ConsoleKit, SwapQuoteRoute } from "brahma-console-kit";
 import { ConsoleKitConfig } from "./config";
-import { getSwapRoutesData, modifyValuesAsPerRequirement } from "./utils";
+import {
+  ConsoleKitFetchBridgingRoutes,
+  getSwapRoutesData,
+  modifyValuesAsPerRequirement,
+} from "./utils";
 
 export const sendToken = tool(
   async (input, fields) => {
@@ -11,7 +15,6 @@ export const sendToken = tool(
       ConsoleKitConfig.baseUrl
     );
     const data = await modifyValuesAsPerRequirement(input);
-    console.log("input00000==========>", data);
     try {
       const { data } = await consoleKit.coreActions.send(
         input.chainId as number,
@@ -52,45 +55,26 @@ export const bridgeToken = tool(
       ConsoleKitConfig.baseUrl
     );
     console.log("bridgeRoute==========>input", input);
+    const data = await modifyValuesAsPerRequirement(input);
+    console.log("bridgeRoute==========>data", data);
     try {
-      const [bridgeRoute] = await consoleKit.coreActions.fetchBridgingRoutes({
+      const data = await ConsoleKitFetchBridgingRoutes({
         amountIn: input.inputTokenAmount,
         amountOut: "0",
         chainIdIn: Number(input.chainIdIn),
         chainIdOut: Number(input.chainIdOut),
-        ownerAddress: input.accountAddress,
-        recipient: input.accountAddress as any,
-        slippage: 0.1,
-        tokenIn: input.tokenIn,
-        tokenOut: input.tokenOut,
+        ownerAddress: input.accountAddress as Address,
+        recipient: input.accountAddress as Address,
+        slippage: 0.5,
+        tokenIn: input.tokenIn as Address,
+        tokenOut: input.tokenOut as Address,
       });
 
-      if (!bridgeRoute) return "No Bridge route found";
+      if (!data) return "No Bridge route found";
 
-      const { data } = await consoleKit.coreActions.bridge(
-        input.chainIdIn,
-        input.accountAddress as any,
-        {
-          amountIn: input.inputTokenAmount,
-          amountOut: "0",
-          chainIdIn: Number(input.chainIdIn),
-          chainIdOut: Number(input.chainIdOut),
-          ownerAddress: input.accountAddress as any,
-          recipient: input.accountAddress as any,
-          route: bridgeRoute,
-          tokenIn: input.tokenIn as Address,
-          tokenOut: input.tokenOut as Address,
-          slippage: 1,
-        }
-      );
       return {
         transactions: data.transactions,
       };
-      //   return `The following transactions must be executed to perform the requested bridging-\n${JSON.stringify(
-      //     data.transactions,
-      //     null,
-      //     2
-      //   )}`;
     } catch (e) {
       console.log(e);
       return "an error occurred";
@@ -115,17 +99,6 @@ export const swapToken = tool(
     console.log("input00000==========>", data);
 
     try {
-      // const { data: swapRouteData, error } =
-      // await consoleKit.coreActions.getSwapRoutes(
-      //   input.tokenIn as Address,
-      //   input.tokenOut as Address,
-      //   input.accountAddress as Address,
-      //   input.inputTokenAmount,
-      //   `${1}`,
-      //   input.chainId
-      // );
-
-      // console.log("swapRouteData---", error, swapRouteData);
       const swapRouteData: SwapQuoteRoute[] =
         (await getSwapRoutesData(
           input.tokenIn as Address,
@@ -155,11 +128,6 @@ export const swapToken = tool(
       return {
         transactions: data.transactions,
       };
-      //   return `The following transactions must be executed to perform the requested swap-\n${JSON.stringify(
-      //     data.transactions,
-      //     null,
-      //     2
-      //   )}`;
     } catch (e) {
       console.log(e);
       throw `an error occurred ${e}`;

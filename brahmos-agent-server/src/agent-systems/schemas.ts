@@ -4,7 +4,7 @@ export const BridgerSchema = z.object({
   chainIdOut: z
     .number()
     .describe(
-      "This the id of the chain from which token will be out. Example:'1 for ethereum'"
+      "This is the id of the chain from which token will be out. Example:'1 for ethereum'"
     ),
   chainIdIn: z
     .number()
@@ -14,17 +14,17 @@ export const BridgerSchema = z.object({
   accountAddress: z
     .string()
     .describe(
-      "This the user address. Example:'0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab'"
+      "This is the user address. Example:'0xBE882FE36D60307E3D350E5FDeD004037f5ab4ab'"
     ),
   tokenIn: z
     .string()
     .describe(
-      "This the address of the token that user gets in. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
+      "This is the address of the token that user receives from another chain. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     ),
   tokenOut: z
     .string()
     .describe(
-      "This the address of the token that user gives out. Example:'0xB0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
+      "This is the address of the token that user bridges or sends to another chain. Example:'0xB0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     ),
   inputTokenAmount: z
     .string()
@@ -88,14 +88,14 @@ export const TransactionSchema = z.object({
   tokenIn: z
     .string()
     .describe(
-      "This the address of the token that user gets in. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
+      "This is the address of the token that user gets in from another chain while bridging or from same chain when swapping. Example:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     )
     .optional(),
   tokenOut: z
     .string()
     .optional()
     .describe(
-      "This the address of the token that user gives out. Example:'0xB0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
+      "This is the address of the token that user sends out to another chain while bridging or from same chain when swapping. Example:'0xB0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'"
     ),
   inputTokenAmount: z
     .string()
