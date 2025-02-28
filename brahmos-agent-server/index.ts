@@ -6,11 +6,23 @@ const app = express();
 const PORT: number = Number(process.env.PORT) || 3001;
 
 app.use(express.json());
+const allowedOrigins = [
+  "https://safe-wallet-transaction-execution-agent.vercel.app",
+  "https://safe-wallet-transaction-execution-agent-rpvm-frontend.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "https://safe-wallet-transaction-execution-agent.vercel.app",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: "GET,POST",
     allowedHeaders: "Content-Type,Authorization",
+    credentials: true, // Allow cookies & authentication headers
   })
 );
 
