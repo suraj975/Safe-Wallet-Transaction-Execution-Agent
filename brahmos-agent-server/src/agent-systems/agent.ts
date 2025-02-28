@@ -4,7 +4,6 @@ import {
   StateGraph,
   START,
   END,
-  MemorySaver,
 } from "@langchain/langgraph";
 import dotenv from "dotenv";
 dotenv.config();
@@ -16,7 +15,7 @@ import {
 } from "./utils";
 import { ALL_TOOLS_LIST } from "./tools";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { AIMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { TransactionSchema } from "./schemas";
 import { z } from "zod";
 
@@ -31,77 +30,180 @@ const llm = new ChatOpenAI({
 const GraphAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
   transaction: Annotation<z.infer<typeof TransactionSchema>>(),
+  planningTasks: Annotation<string[]>(),
+  currentTransactionIndex: Annotation<number>(),
 });
 
 const toolNode = new ToolNode(ALL_TOOLS_LIST);
-const memory = new MemorySaver();
 
 const callModel = async (state: {
   messages: AIMessage[];
   transaction: z.infer<typeof TransactionSchema>;
+  planningTasks: string[];
+  currentTransactionIndex: number;
 }) => {
-  const { messages, transaction } = state;
-  console.log("transaction callModel messages---", transaction);
-  if (!transaction) {
-    throw new Error("Transaction is missing from state");
-  }
-  // console.log("messages=====", messages);
-  // console.log("callModel=====", [...messages].pop());
+  const { messages, transaction, planningTasks, currentTransactionIndex } =
+    state;
 
-  const systemMessage = {
-    role: "system",
-    content: `
+  const currentTask = planningTasks?.[currentTransactionIndex];
+  const extractedTransaction = currentTask
+    ? await extractTransactionJSON(currentTask, llm)
+    : undefined;
+
+  const transactionState = extractedTransaction
+    ? await modifyValuesAsPerRequirement(extractedTransaction)
+    : undefined;
+
+  let toolMessages: any[] = [];
+
+  if (!transactionState) {
+    toolMessages = messages?.reduce((toolMessage, message) => {
+      if ((message as ToolMessage)?.tool_call_id) {
+        toolMessage.push(
+          JSON.stringify({
+            type: message?.name,
+            content: message?.content,
+          }) as string
+        );
+      }
+      return toolMessage;
+    }, [] as string[]);
+  }
+
+  const content = transactionState?.accountAddress
+    ? `
     - You are an AI agent that is responsible for blockchain transactions like:
     - Sending tokens from one wallet to another
     - Checking the balance of a wallet
     - Swapping tokens from one token to another
     - Bridging tokens from one chain to another
     - All transaction data tools require a data to be passed in as a parameter
-    - Use this ${state.transaction.accountAddress} as the accountAddress provided in the graph state and dont take it from user context
+    - Use this ${transaction?.accountAddress} as the accountAddress provided in the graph state and dont take it from user context
     - Make sure you use only address for token, tokenIn and tokenOut
-    - Use only this data ${transaction} to get the values required for agent tool  
-    - Use this ${state.transaction.tokenIn} as the tokenIn provided in the graph state and dont take it from user context
-    - Use this ${state.transaction.tokenOut} as the tokenOut provided in the graph state and dont take it from user context
+    - Use only this data ${transactionState} to get the values required for agent tool  
+    - Use this ${transactionState?.tokenIn} as the tokenIn provided in the graph state and dont take it from user context
+    - Use this ${transactionState?.tokenOut} as the tokenOut provided in the graph state and dont take it from user context
     - Return the response when all the transactions has been created
+    `
+    : `
+    - You are an AI agent that is responsible for blockchain transactions like:
+    - Sending tokens from one wallet to another
+    - Checking the balance of a wallet
+    - Swapping tokens from one token to another
+    - Bridging tokens from one chain to another
+    - This is the complete history for it ${toolMessages}
+    - To get specific data about the transaction details that can be found in the tool ToolMessage
+    - If you don't get it, in the ui all the transaction details are being shown
+    - Return the response of all the transaction happened which is easy to understand
+    `;
 
-    `,
+  const systemMessage = {
+    role: "system",
+    content: content,
   };
 
   const llmWithTools = llm.bindTools(ALL_TOOLS_LIST);
-  const result = await llmWithTools.invoke([systemMessage, ...messages]);
-  return { messages: result, transaction };
+
+  const result = await llmWithTools.invoke([
+    systemMessage,
+    new HumanMessage({ content: currentTask ?? "All Tasks Completed" }),
+  ]);
+
+  return {
+    messages: result,
+    transaction: {
+      ...transactionState,
+      accountAddress: transaction?.accountAddress,
+    },
+    currentTransactionIndex: currentTransactionIndex + 1,
+    planningTasks,
+  };
 };
 
 const shouldContinue = (state: typeof GraphAnnotation.State) => {
-  const { messages, transaction } = state;
-  console.log("transaction=====", transaction);
+  const { messages, currentTransactionIndex, planningTasks } = state;
   const lastMessage = messages[messages.length - 1];
-  // Cast here since `tool_calls` does not exist on `BaseMessage`
   const messageCastAI = lastMessage as AIMessage;
 
-  // console.log("messageCastAI.tool_calls", messageCastAI.tool_calls);
-  if (messageCastAI.tool_calls?.length) {
-    // LLM did not call any tools, so we should end.
+  if (messageCastAI?.tool_calls?.length) {
     return ["tools"];
   }
 
-  return ["finalOutput"];
+  if (currentTransactionIndex >= planningTasks.length) {
+    return END;
+  }
+
+  return ["agent"];
 };
 
-const finalOutput = (state: typeof GraphAnnotation.State) => {
+const shouldPlanningContinue = (state: typeof GraphAnnotation.State) => {
+  const { planningTasks } = state;
+  if (planningTasks) {
+    return "agent";
+  }
+
+  return ["noPlanCreation"];
+};
+
+const noPlanCreation = async (state: typeof GraphAnnotation.State) => {
   const { messages } = state;
   const lastMessage = messages[messages.length - 1];
+  const messageCastAI = lastMessage as AIMessage;
 
-  return { state, result: END };
+  return {
+    messages: messageCastAI,
+  };
+};
+
+const planCreation = async (state: typeof GraphAnnotation.State) => {
+  const { messages, transaction } = state;
+
+  const systemMessage = {
+    role: "system",
+    content: `
+    - You are an AI agent that is responsible for creating plans for blockchain transaction.
+    - You are responsible for creating an array of tasks which includes multiple transaction.
+    - The user can ask for multiple transactions to be performed like transfer, swap or bridge.
+    - Your main task is to divide the user input into different array of sentences. This means separating "and" or separate the joining of the statements in the user input.
+    - The tasks must be an array of english statements.
+    - Should only return the array of statements that can be parsed.
+    - You can only plan for the transactions sent by the user, ask if user want to create some transaction with examples
+    - If the user input does not ask related to creating transaction like transfer, swap or bridge, then don't create a plan
+    - you can also mention examples like below
+    - Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
+    - Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain
+    - Can you swap 100 of this token USDC to WBTC on base chain
+    - Can you send 10000000000000000000 DAI from Base to Arbitrum chain
+  `,
+  };
+
+  const result = await llm.invoke([systemMessage, ...messages]);
+
+  const hasPlan =
+    isValidJSON(result?.content as string) &&
+    JSON?.parse(result?.content as string);
+
+  return {
+    ...state,
+    currentTransactionIndex: 0,
+    messages: result,
+    ...(!hasPlan ? { result: END } : {}),
+    planningTasks:
+      isValidJSON(result?.content as string) &&
+      JSON?.parse(result?.content as string),
+  };
 };
 
 const workflow = new StateGraph(GraphAnnotation)
   .addNode("agent", callModel)
-  .addEdge(START, "agent")
+  .addNode("taskPlanning", planCreation)
+  .addEdge(START, "taskPlanning")
   .addNode("tools", toolNode)
-  .addNode("finalOutput", finalOutput)
+  .addNode("noPlanCreation", noPlanCreation)
   .addEdge("tools", "agent")
-  .addConditionalEdges("agent", shouldContinue, ["tools", "finalOutput"]);
+  .addEdge("noPlanCreation", END)
+  .addConditionalEdges("agent", shouldContinue)
+  .addConditionalEdges("taskPlanning", shouldPlanningContinue);
 
 export const graph = workflow.compile({});
 
@@ -114,15 +216,9 @@ export const blockchainAgent = async (
 
   const userInput = message;
 
-  const extractedTransaction = await extractTransactionJSON(userInput, llm);
-  console.log("extractedTransaction---", extractedTransaction);
-  const data = await modifyValuesAsPerRequirement(extractedTransaction);
-  console.log("data---", data, address);
   const inputs = {
     messages: [{ role: "user", content: userInput }],
     transaction: {
-      ...extractedTransaction,
-      ...data,
       accountAddress: address,
       transactions: [],
     },
@@ -165,6 +261,13 @@ export const blockchainAgent = async (
       if (event?.agent?.messages?.response_metadata?.finish_reason === "stop") {
         sendEvent(event?.agent?.messages?.content, "assistant");
       }
+      if (
+        event?.noPlanCreation?.messages?.response_metadata?.finish_reason ===
+        "stop"
+      ) {
+        sendEvent(event?.noPlanCreation?.messages?.content, "assistant");
+      }
+      console.log("event", event);
     }
   }
 };
@@ -174,3 +277,5 @@ export const blockchainAgent = async (
 // Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain
 // Can you swap 100 of this token USDC to WBTC on base chain
 // Can you send 10000000000000000000 DAI from Base to Arbitrum chain
+
+//Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum and also Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain and also can you send 10000000000000000000 DAI from Base to Arbitrum chain
