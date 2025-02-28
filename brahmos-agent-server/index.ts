@@ -8,8 +8,7 @@ const PORT: number = Number(process.env.PORT) || 3001;
 app.use(express.json());
 app.use(
   cors({
-    origin:
-      "https://safe-wallet-transaction-execution-agent-kac8sk1rh.vercel.app",
+    origin: "https://safe-wallet-transaction-execution-agent.vercel.app",
     methods: "GET,POST",
     allowedHeaders: "Content-Type,Authorization",
   })
