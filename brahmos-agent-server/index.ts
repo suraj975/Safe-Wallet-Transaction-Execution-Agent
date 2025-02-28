@@ -10,7 +10,8 @@ https: app.use(express.json());
 
 // ✅ List of Allowed Frontend Origins
 const allowedOrigins = [
-  "https://safe-wallet-transaction-execution-agent.onrender.com/",
+  "https://safe-wallet-transaction-execution-agent.vercel.app",
+  "https://safe-wallet-transaction-execution-agent-rpvm-frontend.vercel.app",
 ];
 
 // ✅ CORS Middleware - Allow only specific origins
