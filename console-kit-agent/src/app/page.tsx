@@ -80,7 +80,7 @@ export default function ChatUI() {
         if (!eventSourceRef.current) {
           console.log("Reconnecting SSE...");
           eventSourceRef.current = new EventSource(
-            "http://localhost:3001/chat"
+            "https://safe-wallet-transaction-execution-agent-kac8sk1rh.vercel.app/chat"
           );
           setupEventListeners(eventSourceRef.current);
         }
@@ -91,7 +91,9 @@ export default function ChatUI() {
   useEffect(() => {
     if (!eventSourceRef.current) {
       console.log("Initializing SSE connection...");
-      eventSourceRef.current = new EventSource("http://localhost:3001/chat");
+      eventSourceRef.current = new EventSource(
+        "https://safe-wallet-transaction-execution-agent-kac8sk1rh.vercel.app/chat"
+      );
       setupEventListeners(eventSourceRef.current);
     }
 
