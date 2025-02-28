@@ -168,6 +168,7 @@ const planCreation = async (state: typeof GraphAnnotation.State) => {
     - Your main task is to divide the user input into different array of sentences. This means separating "and" or separate the joining of the statements in the user input.
     - The tasks must be an array of english statements.
     - Should only return the array of statements that can be parsed.
+    - Below are only the cases where the user input does not relate to plan for creating transaction
     - If the user input does not ask related to creating transaction like transfer, swap or bridge, then don't create a plan
     - then only you can also mention examples like below
     - Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
