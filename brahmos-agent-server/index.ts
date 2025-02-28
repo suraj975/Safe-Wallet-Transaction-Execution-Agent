@@ -32,6 +32,7 @@ app.use(
 );
 
 // ✅ Handle Preflight (`OPTIONS`) Requests for CORS
+//@ts-ignore
 app.options("*", (req, res) => {
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
