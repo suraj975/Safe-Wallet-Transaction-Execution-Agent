@@ -111,7 +111,9 @@ export async function getTokenInfo(chain: number, token: string) {
   return await fetch(url, options)
     .then((res) => res.json())
     .then((json) => json)
-    .catch((err) => err);
+    .catch((err) => {
+      throw err;
+    });
 }
 
 export function isValidJSON(str: string) {
