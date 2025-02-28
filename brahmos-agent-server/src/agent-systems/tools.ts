@@ -15,6 +15,7 @@ export const sendToken = tool(
       ConsoleKitConfig.baseUrl
     );
     const data = await modifyValuesAsPerRequirement(input);
+    console.log("called---sendToken");
     try {
       const { data } = await consoleKit.coreActions.send(
         input.chainId as number,
