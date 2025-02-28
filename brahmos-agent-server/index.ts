@@ -1,90 +1,115 @@
 import express, { Request, Response } from "express";
-import { blockchainAgent } from "./src/agent-systems/agent";
 import cors from "cors";
+import { blockchainAgent } from "./src/agent-systems/agent";
 
 const app = express();
-const PORT: number = Number(process.env.PORT) || 3001;
+const PORT: number = Number(process.env.PORT) || 4000;
 
 app.use(express.json());
+
+// ✅ List of Allowed Frontend Origins
 const allowedOrigins = [
   "https://safe-wallet-transaction-execution-agent.vercel.app",
   "https://safe-wallet-transaction-execution-agent-rpvm-frontend.vercel.app",
 ];
 
+// ✅ CORS Middleware - Allow only specific origins
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log("🔄 Incoming CORS request from:", origin);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log("❌ Blocked CORS request from:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: "GET,POST",
-    allowedHeaders: "Content-Type,Authorization",
-    credentials: true, // Allow cookies & authentication headers
+    methods: "GET, POST, OPTIONS",
+    allowedHeaders: "Content-Type, Authorization",
+    credentials: true, // Allow authentication headers
   })
 );
 
-let clients: Response[] = []; // Store active connections
+// ✅ Handle Preflight (`OPTIONS`) Requests for CORS
+app.options("*", (req, res) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    return res.sendStatus(204);
+  }
+  res.status(403).json({ error: "Not allowed by CORS" });
+});
 
-// SSE connection for real-time events
+// ✅ Store Active SSE Clients
+let clients: Response[] = [];
+
+// ✅ SSE Connection for Real-Time Updates
 app.get("/chat", (req: Request, res: Response) => {
+  const origin = req.headers.origin;
+
+  if (!origin || !allowedOrigins.includes(origin)) {
+    console.log("❌ Blocked SSE connection from:", origin);
+    return res.status(403).json({ error: "Not allowed by CORS" });
+  }
+
+  // ✅ Set CORS Headers for SSE
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  clients.push(res); // Add client to the list
+  // ✅ Add Client to Active SSE Connections
+  clients.push(res);
 
+  // ✅ Keep SSE Connection Alive
   const keepAliveInterval = setInterval(() => {
-    res.write(" \n\n");
+    res.write(":\n\n"); // Comment to prevent disconnection
   }, 30000);
 
+  // ✅ Remove Disconnected Clients
   req.on("close", () => {
     clients = clients.filter((client) => client !== res);
     clearInterval(keepAliveInterval);
   });
 });
 
-// Send user messages
+// ✅ Send User Messages via SSE
 app.post("/chat", async (req: Request, res: Response) => {
   const { message, address } = req.body;
-  console.log("User Message:", message, address);
+  console.log("💬 User Message:", message, address);
 
-  // Send message to all connected SSE clients
+  // ✅ Send Message to All SSE Clients
   clients.forEach((client) => {
     client.write(
       `data: ${JSON.stringify({ role: "user_request", content: message })}\n\n`
     );
   });
 
-  // Stream Langchain agent events
-  await blockchainAgent({ message, address }, (event, role?: any) => {
+  // ✅ Stream Langchain Agent Events
+  await blockchainAgent({ message, address }, (event, role?: string) => {
     clients.forEach((client) => {
       if (role) {
-        if (role === "assistant")
-          client.write(
-            `data: ${JSON.stringify({ role: "assistant", content: event })}\n\n`
-          );
-        else if (role === "graph_state") {
-          client.write(
-            `data: ${JSON.stringify({ role: "graph_state", content: event })}\n\n`
-          );
-        } else if (role === "tools")
-          client.write(
-            `data: ${JSON.stringify({ role: "tools", content: event })}\n\n`
-          );
-      } else client.write(`data: ${JSON.stringify(event)}\n\n`);
+        client.write(`data: ${JSON.stringify({ role, content: event })}\n\n`);
+      } else {
+        client.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
     });
   });
 
   res.status(200).json({ success: true });
 });
 
+// ✅ Start Server
 app.listen(PORT, () =>
-  console.log(`Server is running on http://localhost:${PORT}`)
+  console.log(`🚀 Server is running on http://localhost:${PORT}`)
 );
-
-if (process.env.NODE_ENV !== "production") {
-  console.log("Nodemon is watching for changes...");
-}
