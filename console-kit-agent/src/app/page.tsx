@@ -110,11 +110,14 @@ export default function ChatUI() {
     setMessages((prev) => [...prev, { role: "user", content: userInput }]);
 
     try {
-      await fetch("http://localhost:3001/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userInput, address }),
-      });
+      await fetch(
+        "https://safe-wallet-transaction-execution-agent-kac8sk1rh.vercel.app/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userInput, address }),
+        }
+      );
     } catch (error) {
       console.log("Error sending message:", error);
     }
