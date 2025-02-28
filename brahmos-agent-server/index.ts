@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
-import { blockchainAgent } from "./src/agent-systems/agent";
+import { blockchainAgent } from "./src/agent";
 
 const app = express();
 const PORT: number = Number(process.env.PORT) || 4000;
