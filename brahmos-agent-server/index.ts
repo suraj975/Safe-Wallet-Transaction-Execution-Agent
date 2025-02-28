@@ -4,13 +4,13 @@ import { blockchainAgent } from "./src/agent-systems/agent";
 
 const app = express();
 const PORT: number = Number(process.env.PORT) || 4000;
+//safe-wallet-transaction-execution-agent.onrender.com/
 
-app.use(express.json());
+https: app.use(express.json());
 
 // ✅ List of Allowed Frontend Origins
 const allowedOrigins = [
-  "https://safe-wallet-transaction-execution-agent.vercel.app",
-  "https://safe-wallet-transaction-execution-agent-rpvm-frontend.vercel.app",
+  "https://safe-wallet-transaction-execution-agent.onrender.com/",
 ];
 
 // ✅ CORS Middleware - Allow only specific origins
@@ -51,7 +51,7 @@ app.options("*", (req, res) => {
 let clients: Response[] = [];
 
 // ✅ SSE Connection for Real-Time Updates
-app.get("/chat", (req: Request, res: Response) => {
+app.get("/chat", (req: any, res: any) => {
   const origin = req.headers.origin;
 
   if (!origin || !allowedOrigins.includes(origin)) {
