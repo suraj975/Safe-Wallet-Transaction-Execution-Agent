@@ -108,7 +108,7 @@ const callModel = async (state: {
     systemMessage,
     new HumanMessage({ content: currentTask ?? "All Tasks Completed" }),
   ]);
-
+  console.log("callModel===", result);
   return {
     messages: result,
     transaction: {
@@ -138,6 +138,7 @@ const shouldContinue = (state: typeof GraphAnnotation.State) => {
 
 const shouldPlanningContinue = (state: typeof GraphAnnotation.State) => {
   const { planningTasks } = state;
+  console.log("shouldPlanningContinue===", planningTasks);
   if (planningTasks) {
     return "agent";
   }
@@ -149,7 +150,7 @@ const noPlanCreation = async (state: typeof GraphAnnotation.State) => {
   const { messages } = state;
   const lastMessage = messages[messages.length - 1];
   const messageCastAI = lastMessage as AIMessage;
-
+  console.log("noPlanCreation===");
   return {
     messages: messageCastAI,
   };
@@ -178,7 +179,7 @@ const planCreation = async (state: typeof GraphAnnotation.State) => {
   };
 
   const result = await llm.invoke([systemMessage, ...messages]);
-
+  console.log("planCreation result===", result);
   const hasPlan =
     isValidJSON(result?.content as string) &&
     JSON?.parse(result?.content as string);
