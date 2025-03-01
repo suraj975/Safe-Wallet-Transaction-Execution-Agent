@@ -11,8 +11,6 @@ import {
 
 export const sendToken = tool(
   async (input, fields) => {
-    console.log("called---sendToken");
-
     const consoleKit = new ConsoleKit(
       ConsoleKitConfig.apiKey,
       ConsoleKitConfig.baseUrl
@@ -26,7 +24,7 @@ export const sendToken = tool(
         {
           amount: input.inputTokenAmount,
           to: input.receiverAddress as Address,
-          tokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          tokenAddress: input.tokenAddress as Address,
         }
       );
 
@@ -100,7 +98,6 @@ export const swapToken = tool(
     );
 
     const data = await modifyValuesAsPerRequirement(input);
-    console.log("input00000==========>", data);
 
     try {
       const swapRouteData: SwapQuoteRoute[] =

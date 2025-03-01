@@ -151,8 +151,26 @@ const noPlanCreation = async (state: typeof GraphAnnotation.State) => {
   const lastMessage = messages[messages.length - 1];
   const messageCastAI = lastMessage as AIMessage;
   console.log("noPlanCreation===");
+
+  const systemMessage = {
+    role: "system",
+    content: `
+    - You are an AI agent that is responsible for handling the user queries.
+    - This will be only called if the user asked something else other then creating a blockchain transaction.
+    - These are the messages from the user and the ai in other node.
+    - You just need to add more if required like examples belows.
+    - If the user asks what the Ai can do, below are the examples. The examples should be send as a statement and not array.
+    - Example 1: Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
+    - Example 2: Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain
+    - Example 3: Can you swap 100 of this token USDC to WBTC on base chain
+    - Example 4: Can you send 10000000000000000000 DAI from Base to Arbitrum chain
+    - The user can also send multiple transactions, but the transaction send by the user should be full sentence and then joined with and or other english text.
+    - Example 5: Example: Send 100 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and also send 500 USDC from 0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to 0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum and also Can you swap 100 of this token address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base chain and also can you send 10000000000000000000 DAI from Base to Arbitrum chain.
+  `,
+  };
+  const result = await llm.invoke([systemMessage, ...messages]);
   return {
-    messages: messageCastAI,
+    messages: result,
   };
 };
 
@@ -168,6 +186,7 @@ const planCreation = async (state: typeof GraphAnnotation.State) => {
     - Your main task is to divide the user input into different array of sentences. This means separating "and" or separate the joining of the statements in the user input.
     - The tasks must be an array of english statements.
     - Should only return the array of statements that can be parsed.
+
   `,
   };
 

@@ -9,10 +9,7 @@ const PORT: number = Number(process.env.PORT) || 4000;
 https: app.use(express.json());
 
 // ✅ List of Allowed Frontend Origins
-const allowedOrigins = [
-  "https://safe-wallet-transaction-execution-agent.vercel.app",
-  "https://safe-wallet-transaction-execution-agent-rpvm-frontend.vercel.app",
-];
+const allowedOrigins = ["http://localhost:3000"];
 
 // ✅ CORS Middleware - Allow only specific origins
 app.use(
