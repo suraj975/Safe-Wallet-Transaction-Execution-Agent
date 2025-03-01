@@ -44,7 +44,7 @@ export default function ChatUI() {
     }, 100); // Short delay to allow DOM updates
   }, [events]);
 
-  const [showTransactions, setShowTransactions] = useState(false);
+  const [showTransactions, setShowTransactions] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null); // Store SSE connection
   const { address } = useAccount();
 
@@ -291,31 +291,34 @@ export default function ChatUI() {
                 )}
               </button>
             </div>
-            <div className="!mt-4">
+
+            <div className="!mt-4 text-gray-400 text-xs">
+              Currently, swaps are only working for Base, Arbitrum mainnet
+            </div>
+            <div className="!mt-4 h-[300px] overflow-y-auto">
               <CustomAccordion>
                 <CustomAccordionItem title="Simple Transactions Examples">
                   <p>
-                    1. Send 100 USDC from
+                    Send 100 USDC from
                     0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
                     0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum
                   </p>
                   <p>
-                    2. Can you swap 100 of this token USDC to WBTC on base chain
+                    Can you swap 100 of this token USDC to WBTC on base chain
                   </p>
                   <p>
-                    3. Can you swap 100 of this token address
+                    Can you swap 100 of this token address
                     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to
                     0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base
                     chain
                   </p>
                   <p>
-                    4. Can you send 10000000000000000000 DAI from Base to
-                    Arbitrum
+                    Can you send 10000000000000000000 DAI from Base to Arbitrum
                   </p>
                 </CustomAccordionItem>
                 <CustomAccordionItem title="Combined Transactions Examples">
                   <p>
-                    1. Send 100 USDC from
+                    Send 100 USDC from
                     0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
                     0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and
                     also send 500 USDC from
@@ -323,7 +326,7 @@ export default function ChatUI() {
                     0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
                   </p>
                   <p>
-                    2. Send 100 USDC from
+                    Send 100 USDC from
                     0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
                     0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and
                     also send 500 USDC from
@@ -338,9 +341,6 @@ export default function ChatUI() {
                 </CustomAccordionItem>
               </CustomAccordion>
             </div>
-            <div className="text-gray-400 text-xs">
-              Currently, swaps are only working for Base, Arbitrum mainnet
-            </div>
           </div>
         </div>
 
@@ -352,7 +352,7 @@ export default function ChatUI() {
         >
           <button
             onClick={() => setShowEvents(!showEvents)}
-            className={`absolute z-90 ${
+            className={`absolute zIndex-99 ${
               showEvents ? "right-0" : "-left-5"
             } top-10 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-l-lg lg:hidden`}
           >
@@ -362,7 +362,7 @@ export default function ChatUI() {
           {/* Scrollable container */}
           <div className="p-4 h-full flex flex-col">
             {/* Sticky header */}
-            <h2 className="text-lg   font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 -z-10 border-b border-gray-800">
+            <h2 className="text-lg font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 -z-10 border-b border-gray-800">
               🔍 Event Logs
             </h2>
 
