@@ -36,6 +36,29 @@ export default function ChatUI() {
   const eventEndRef = useRef<HTMLDivElement>(null);
   const transactionEndRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const sendMessage = async () => {
+    if (!userInput.trim()) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: userInput }]);
+    setLoading(true);
+    try {
+      await fetch(
+        "https://safe-wallet-transaction-execution-agent.onrender.com/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userInput, address }),
+        }
+      );
+    } catch (error) {
+      console.log("Error sending message:", error);
+    }
+
+    setUserInput("");
+    setLoading(false);
+  };
+
   useLayoutEffect(() => {
     setTimeout(() => {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,6 +66,17 @@ export default function ChatUI() {
       transactionEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100); // Short delay to allow DOM updates
   }, [events]);
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Enter" && !loading) {
+        sendMessage();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyPress);
+    return () => document.removeEventListener("keydown", handleKeyPress);
+  }, [loading, sendMessage]);
 
   const [showTransactions, setShowTransactions] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null); // Store SSE connection
@@ -110,28 +144,6 @@ export default function ChatUI() {
       }
     };
   }, []);
-
-  const sendMessage = async () => {
-    if (!userInput.trim()) return;
-
-    setMessages((prev) => [...prev, { role: "user", content: userInput }]);
-    setLoading(true);
-    try {
-      await fetch(
-        "https://safe-wallet-transaction-execution-agent.onrender.com/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userInput, address }),
-        }
-      );
-    } catch (error) {
-      console.log("Error sending message:", error);
-    }
-
-    setUserInput("");
-    setLoading(false);
-  };
 
   return (
     <>
