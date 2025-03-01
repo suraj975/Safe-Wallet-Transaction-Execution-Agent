@@ -10,10 +10,11 @@ import {
 
 export const sendToken = tool(
   async (input, fields) => {
-    console.log("called---sendToken", "f27abba2-0749-4d95-aa3d-3c6beb95f59a");
+    console.log("called---sendToken");
+
     const consoleKit = new ConsoleKit(
-      "f27abba2-0749-4d95-aa3d-3c6beb95f59a",
-      "https://dev.console.fi/v1/vendor"
+      ConsoleKitConfig.apiKey,
+      ConsoleKitConfig.baseUrl
     );
     const data = await modifyValuesAsPerRequirement(input);
 
