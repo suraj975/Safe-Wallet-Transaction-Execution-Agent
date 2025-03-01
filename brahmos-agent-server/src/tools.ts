@@ -10,12 +10,13 @@ import {
 
 export const sendToken = tool(
   async (input, fields) => {
+    console.log("called---sendToken", ConsoleKitConfig);
     const consoleKit = new ConsoleKit(
-      ConsoleKitConfig.apiKey,
-      ConsoleKitConfig.baseUrl
+      ConsoleKitConfig.apiKey ?? process.env.CONSOLE_KIT_API_KEY,
+      ConsoleKitConfig.baseUrl ?? process.env.CONSOLE_KIT_BASE_URL
     );
     const data = await modifyValuesAsPerRequirement(input);
-    console.log("called---sendToken");
+
     try {
       const { data } = await consoleKit.coreActions.send(
         input.chainId as number,
