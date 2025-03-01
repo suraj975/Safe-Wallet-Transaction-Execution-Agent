@@ -4,14 +4,19 @@ import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 
 import {
+  ActionNameToId,
   Address,
   BridgeRoute,
   ConsoleKit,
+  GenerateCalldataResponse,
+  GeneratePayload,
   GetBridgingRoutesParams,
+  SendParams,
   SwapQuoteRoute,
 } from "brahma-console-kit";
 import { chainNames } from "./constant";
 import { isAddress } from "viem";
+import axios from "axios";
 
 const parser = StructuredOutputParser.fromNamesAndDescriptions({
   accountAddress: "The user account address",
@@ -255,5 +260,37 @@ export const ConsoleKitFetchBridgingRoutes = async (
   } catch (err) {
     console.log(err);
     return undefined;
+  }
+};
+
+export const ConsoleKitSend = async (
+  chainId: number,
+  accountAddress: Address,
+  params: SendParams
+): Promise<GenerateCalldataResponse> => {
+  try {
+    const response = await axios.post<GenerateCalldataResponse>(
+      "https://dev.console.fi/v1/vendor/builder/generate",
+      {
+        id: "INTENT",
+        action: "BUILD",
+        params: {
+          id: ActionNameToId.send,
+          chainId: chainId,
+          consoleAddress: accountAddress,
+          params,
+        },
+      } as GeneratePayload<SendParams, "BUILD">,
+      {
+        headers: {
+          "x-api-key": "f27abba2-0749-4d95-aa3d-3c6beb95f59a", // Set x-api-key header
+        },
+      }
+    );
+
+    return response.data as GenerateCalldataResponse; // Ensure correct return type
+  } catch (err: any) {
+    console.error(`Error generating calldata: ${err.message}`);
+    throw err;
   }
 };

@@ -4,6 +4,7 @@ import { Address, ConsoleKit, SwapQuoteRoute } from "brahma-console-kit";
 import { ConsoleKitConfig } from "./config";
 import {
   ConsoleKitFetchBridgingRoutes,
+  ConsoleKitSend,
   getSwapRoutesData,
   modifyValuesAsPerRequirement,
 } from "./utils";
@@ -19,7 +20,7 @@ export const sendToken = tool(
     const data = await modifyValuesAsPerRequirement(input);
 
     try {
-      const { data } = await consoleKit.coreActions.send(
+      const { data } = await ConsoleKitSend(
         input.chainId as number,
         input.accountAddress as Address,
         {
