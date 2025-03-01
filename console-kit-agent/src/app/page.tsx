@@ -85,7 +85,7 @@ export default function ChatUI() {
         if (!eventSourceRef.current) {
           console.log("Reconnecting SSE...");
           eventSourceRef.current = new EventSource(
-            "http://localhost:4000/chat"
+            "https://safe-wallet-transaction-execution-agent.onrender.com/chat"
           );
           setupEventListeners(eventSourceRef.current);
         }
@@ -96,7 +96,9 @@ export default function ChatUI() {
   useEffect(() => {
     if (!eventSourceRef.current) {
       console.log("Initializing SSE connection...");
-      eventSourceRef.current = new EventSource("http://localhost:4000/chat");
+      eventSourceRef.current = new EventSource(
+        "https://safe-wallet-transaction-execution-agent.onrender.com/chat"
+      );
       setupEventListeners(eventSourceRef.current);
     }
 
@@ -115,11 +117,14 @@ export default function ChatUI() {
     setMessages((prev) => [...prev, { role: "user", content: userInput }]);
     setLoading(true);
     try {
-      await fetch("http://localhost:4000/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userInput, address }),
-      });
+      await fetch(
+        "https://safe-wallet-transaction-execution-agent.onrender.com/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userInput, address }),
+        }
+      );
     } catch (error) {
       console.log("Error sending message:", error);
     }
