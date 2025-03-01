@@ -274,13 +274,20 @@ export const blockchainAgent = async (
       if (event?.agent?.messages?.response_metadata?.finish_reason === "stop") {
         sendEvent(event?.agent?.messages?.content, "assistant");
       }
+
+      if (isValidJSON(event?.taskPlanning?.messages?.content as string)) {
+        sendEvent("Creating a plan...");
+        sendEvent(
+          JSON?.parse(event?.taskPlanning?.messages?.content as string)
+        );
+      }
+
       if (
         event?.noPlanCreation?.messages?.response_metadata?.finish_reason ===
         "stop"
       ) {
         sendEvent(event?.noPlanCreation?.messages?.content, "assistant");
       }
-      console.log("event", event);
     }
   }
 };
