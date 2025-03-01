@@ -10,7 +10,12 @@ import {
 
 export const sendToken = tool(
   async (input, fields) => {
-    console.log("called---sendToken", ConsoleKitConfig);
+    console.log(
+      "called---sendToken",
+      ConsoleKitConfig,
+      process.env.CONSOLE_KIT_API_KEY,
+      process.env.CONSOLE_KIT_BASE_URL
+    );
     const consoleKit = new ConsoleKit(
       ConsoleKitConfig.apiKey ?? process.env.CONSOLE_KIT_API_KEY,
       ConsoleKitConfig.baseUrl ?? process.env.CONSOLE_KIT_BASE_URL
