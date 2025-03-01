@@ -44,7 +44,7 @@ export default function ChatUI() {
     }, 100); // Short delay to allow DOM updates
   }, [events]);
 
-  const [showTransactions, setShowTransactions] = useState(true);
+  const [showTransactions, setShowTransactions] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null); // Store SSE connection
   const { address } = useAccount();
 
@@ -160,7 +160,7 @@ export default function ChatUI() {
           {/* Scrollable container */}
           <div className="p-4 h-full flex flex-col">
             {/* Sticky header */}
-            <h2 className="text-lg font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 z-10 border-b border-gray-800">
+            <h2 className="text-lg font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 -z-10 border-b border-gray-800">
               💳 Transactions
             </h2>
 
@@ -352,7 +352,7 @@ export default function ChatUI() {
         >
           <button
             onClick={() => setShowEvents(!showEvents)}
-            className={`absolute zIndex-99 ${
+            className={`absolute z-90 ${
               showEvents ? "right-0" : "-left-5"
             } top-10 bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-l-lg lg:hidden`}
           >
@@ -362,7 +362,7 @@ export default function ChatUI() {
           {/* Scrollable container */}
           <div className="p-4 h-full flex flex-col">
             {/* Sticky header */}
-            <h2 className="text-lg font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 z-10 border-b border-gray-800">
+            <h2 className="text-lg   font-bold text-cyan-300 mb-4 bg-gray-950 p-2 sticky top-0 -z-10 border-b border-gray-800">
               🔍 Event Logs
             </h2>
 
