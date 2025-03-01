@@ -75,7 +75,7 @@ const Transactions: React.FC<TransactionProps> = ({
       {/* Header Section */}
       <div className="flex justify-between items-center pb-2 mb-3 border-b border-gray-700">
         <h3 className="text-sm font-semibold text-cyan-300">
-          {TransactionType[graphState.type]}
+          {TransactionType[graphState?.type]}
         </h3>
         <div>
           {status === "pending" && (
@@ -100,13 +100,13 @@ const Transactions: React.FC<TransactionProps> = ({
           <span className="text-gray-400 font-medium">Account:</span>
           <span
             className="truncate max-w-[120px] inline-block"
-            title={graphState.accountAddress}
+            title={graphState?.accountAddress}
           >
-            {graphState.accountAddress.slice(0, 6)}...
-            {graphState.accountAddress.slice(-4)}
+            {graphState?.accountAddress.slice(0, 6)}...
+            {graphState?.accountAddress.slice(-4)}
           </span>
         </p>
-        {graphState.type !== "send_token" && (
+        {graphState?.type !== "send_token" && (
           <p className="flex justify-between">
             <span className="text-gray-400 font-medium">Token In:</span>
             <span>
@@ -115,7 +115,7 @@ const Transactions: React.FC<TransactionProps> = ({
             </span>
           </p>
         )}
-        {graphState.type !== "send_token" && (
+        {graphState?.type !== "send_token" && (
           <p className="flex justify-between">
             <span className="text-gray-400 font-medium">Token Out:</span>
             <span>
@@ -159,7 +159,7 @@ const Transactions: React.FC<TransactionProps> = ({
               : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {TransactionType[graphState.type]}
+          {TransactionType[graphState?.type]}
         </button>
       </div>
     </div>

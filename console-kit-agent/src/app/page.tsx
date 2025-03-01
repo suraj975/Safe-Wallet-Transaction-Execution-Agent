@@ -7,6 +7,10 @@ import { useAccount } from "wagmi";
 import { isValidJSON } from "@/common/utils";
 import ReactMarkdown from "react-markdown";
 import { ToolTransactionType } from "@/type";
+import {
+  CustomAccordion,
+  CustomAccordionItem,
+} from "./components/exmaples-accordion";
 
 export default function ChatUI() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
@@ -25,6 +29,7 @@ export default function ChatUI() {
     }[]
   >([]);
   const [userInput, setUserInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -80,7 +85,7 @@ export default function ChatUI() {
         if (!eventSourceRef.current) {
           console.log("Reconnecting SSE...");
           eventSourceRef.current = new EventSource(
-            "https://safe-wallet-transaction-execution-agent.onrender.com/chat"
+            "http://localhost:4000/chat"
           );
           setupEventListeners(eventSourceRef.current);
         }
@@ -91,9 +96,7 @@ export default function ChatUI() {
   useEffect(() => {
     if (!eventSourceRef.current) {
       console.log("Initializing SSE connection...");
-      eventSourceRef.current = new EventSource(
-        "https://safe-wallet-transaction-execution-agent.onrender.com/chat"
-      );
+      eventSourceRef.current = new EventSource("http://localhost:4000/chat");
       setupEventListeners(eventSourceRef.current);
     }
 
@@ -110,21 +113,19 @@ export default function ChatUI() {
     if (!userInput.trim()) return;
 
     setMessages((prev) => [...prev, { role: "user", content: userInput }]);
-
+    setLoading(true);
     try {
-      await fetch(
-        "https://safe-wallet-transaction-execution-agent.onrender.com/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userInput, address }),
-        }
-      );
+      await fetch("http://localhost:4000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userInput, address }),
+      });
     } catch (error) {
       console.log("Error sending message:", error);
     }
 
     setUserInput("");
+    setLoading(false);
   };
 
   return (
@@ -182,8 +183,8 @@ export default function ChatUI() {
             </div>
           </div>
         </div>
-        <div className="flex-1 flex flex-col items-center p-8 pb-20 gap-6 bg-black text-white overflow-hidden">
-          <div className="w-full max-w-3xl space-y-6">
+        <div className="flex-1 flex flex-col items-center p-6 pb-20 gap-6 bg-black text-white overflow-hidden">
+          <div className="w-full max-w-3xl space-y-2">
             <h1 className="text-3xl w-full flex justify-center font-bold text-cyan-400 tracking-wide">
               🧠 Agentic AI Chat
             </h1>
@@ -196,7 +197,14 @@ export default function ChatUI() {
             </p>
 
             {/* Chat Box */}
-            <div className="w-full p-4 border border-cyan-600 rounded-lg bg-gray-900 shadow-lg h-96 overflow-y-auto">
+            <div
+              className={`w-full p-4 rounded-lg bg-gray-900 shadow-lg h-96 overflow-y-auto relative border-4 
+                ${
+                  loading
+                    ? "border-transparent animate-border"
+                    : "border-cyan-600"
+                }`}
+            >
               {messages.map((msg, index) => (
                 <div
                   key={index}
@@ -249,17 +257,84 @@ export default function ChatUI() {
             <div className="flex w-full">
               <input
                 type="text"
-                className="w-full p-3 border border-gray-700 bg-gray-800 text-white rounded-l-lg outline-none focus:border-cyan-500"
+                disabled={loading}
+                className={`w-full p-3 border rounded-l-lg outline-none transition-all
+                  ${
+                    loading
+                      ? "border-gray-600 bg-gray-700 text-gray-400 cursor-not-allowed"
+                      : "border-gray-700 bg-gray-800 text-white focus:border-cyan-500"
+                  }`}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="Type a message..."
               />
+
               <button
-                className="bg-cyan-600 hover:bg-cyan-500 text-white px-5 rounded-r-lg transition-all"
+                className={`px-5 rounded-r-lg transition-all flex items-center justify-center h-13 w-10
+                  ${
+                    loading
+                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                      : "bg-cyan-600 hover:bg-cyan-500 text-white"
+                  }`}
                 onClick={sendMessage}
+                disabled={loading}
               >
-                🚀
+                {loading ? (
+                  <span className="text-xl fly-animation">🚀</span>
+                ) : (
+                  "🚀"
+                )}
               </button>
+            </div>
+            <div className="!mt-4">
+              <CustomAccordion>
+                <CustomAccordionItem title="Simple Transactions Examples">
+                  <p>
+                    1. Send 100 USDC from
+                    0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
+                    0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum
+                  </p>
+                  <p>
+                    2. Can you swap 100 of this token USDC to WBTC on base chain
+                  </p>
+                  <p>
+                    3. Can you swap 100 of this token address
+                    0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to
+                    0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base
+                    chain
+                  </p>
+                  <p>
+                    4. Can you send 10000000000000000000 DAI from Base to
+                    Arbitrum
+                  </p>
+                </CustomAccordionItem>
+                <CustomAccordionItem title="Combined Transactions Examples">
+                  <p>
+                    1. Send 100 USDC from
+                    0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
+                    0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and
+                    also send 500 USDC from
+                    0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
+                    0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum
+                  </p>
+                  <p>
+                    2. Send 100 USDC from
+                    0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
+                    0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum and
+                    also send 500 USDC from
+                    0x701bC19d0a0502f5E3AC122656aba1d412bE51DD to
+                    0x942d35Cc6634C0532925a3b844Bc454e4438f44e on ethereum and
+                    also Can you swap 100 of this token address
+                    0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (USDC) to
+                    0x0555E30da8f98308EdB960aa94C0Db47230d2B9c (WBTC) on base
+                    chain and also can you send 10000000000000000000 DAI from
+                    Base to Arbitrum chain
+                  </p>
+                </CustomAccordionItem>
+              </CustomAccordion>
+            </div>
+            <div className="text-gray-400 text-xs">
+              Currently, swaps are only working for Base, Arbitrum mainnet
             </div>
           </div>
         </div>
